@@ -1,161 +1,49 @@
-# TryHackMe - Anthem
-[https://tryhackme.com/room/anthem](https://tryhackme.com/room/anthem)
+# TryHackMe - Active Directory Basics
+[https://tryhackme.com/room/winadbasics](https://tryhackme.com/room/winadbasics)
 
-## Target Info
-- IP: 10.10.94.131
-- OS: 
+## Active Directory
+- ユーザなどの権限などを一括管理するためのWindowsの仕組み
+- ドメインコントローラーで管理される
+- アクティブディレクトリーはユーザの権利やグループのメンバーなどを管理するDBのようなものがあり
+- ドメインコントローラーがその情報をもとに認証とかを処理する
 
-## 1. Enumeration
-- nmap scan: nmap -sV -O 10.10.94.131
-- Open ports: 80, 3389
+## Active Directory Domain Service (AD DS).
+- ユーザ、PC、セキュリティグループを分けれるもの
+- ユーザはログインの情報だったり
+- ユーザだけではなくPCも登録する必要があるのは、windowsアプデなどの自動でやっておきたいことをAD経由で行えるようにするため
+- セキュリティグループはどのユーザ、PCにどんなリソースへのアクセス権限を与える、を管理するもの。GCPのIAMみたいな
+  - セキュリティグループは複数割り当て可能。ファイル群Aの権限とファイル群Bの権限あげるよ、みたいな
+- Organizational Units(OU)は単純に、どの会社の部署のどの人、みたいなのを分けるよう。
+  - これはユーザ1に対して1つしか割り当てれない。
+  - OUは入れ子の構造にできていろんな細分化が可能
+- TOM-PCのようなマシンにはTOM-PC$のマシンアカウントが存在する
 
-```
-PORT     STATE SERVICE       VERSION
-80/tcp   open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
-```
+## 委任
+- OUの削除を行う場合、詳細情報からプロパティを見て誤削除防止のチェックを外す必要あり
+- セキュリティポリシーを使ってOUの管理を委任することも可能
+- その場合は、委任の設定からユーザを選択して、どの権限を付与するを宣言できる
+- 例えば営業のOUは営業部長のAさんに、ユーザの追加、更新、削除の権限を与える。など
 
-- Details
-  - Anthem.com. Site of Blogite
-- gobuster
+## Group Policy Management（GPM）
+- OUごとに設定する制限のこと。これがあるのでOUは厳密に分けるべき
+- パスワードポリシー、画面ロック、コントロールパネルの制限
+- Group Policy Manager Editerで変更可能
+- SYSVOLのネットワーク共有を介して定期的に更新されていくもの
+- ポリシー変更があると、他のコンピュータへの変更が反映されていき２時間くらいで終わる
+- 対象のPCで手動で取得しにいくこともできる
 
-```
-gobuster dir -u http://10.10.94.131 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http
-```
+## 認証方法
+- Windowsドメインでは、ユーザーがログインしたり、ネットワークサービス（共有フォルダ・Web・DBなど）を使うときに認証が必要
+- Kerberos
+  - 最初の通信で暗号化して通信し鍵を作ってもらう、以降それを使って許可する
+  - 暗号化してて安全、一度鍵ができると何回でもアクセスできる
+  - 共通かぎっぽい
+- NetNTLM
+  - チャレンジアクセスで乱数を受け取り、決まったルールで暗号化複合化をすることで本人であることを確かめる仕組み
+  - メールの公開鍵暗号方式みたい
 
-- dirsearch -u 
-
-```
-[02:49:10] 403 -  312B  - /%2e%2e//google.com
-[02:49:11] 403 -  312B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:49:45] 301 -  149B  - /.vscode  ->  http://anthem.com/.vscode/
-[02:50:05] 403 -  312B  - /\..\..\..\..\..\..\..\..\..\etc\passwd
-[02:53:41] 301 -  118B  - /archive  ->  /
-[02:53:42] 301 -  118B  - /archive.aspx  ->  /
-[02:54:11] 500 -   45B  - /base/static/c
-[02:54:23] 200 -    5KB - /blog/
-[02:54:23] 200 -    5KB - /blog
-[02:54:40] 200 -    3KB - /categories
-[02:54:42] 403 -  312B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:57:33] 302 -  126B  - /INSTALL  ->  /umbraco/
-[02:57:33] 302 -  126B  - /Install  ->  /umbraco/
-[02:57:33] 302 -  126B  - /install  ->  /umbraco/
-[02:57:34] 302 -  126B  - /install/  ->  /umbraco/
-[03:01:17] 200 -  192B  - /robots.txt
-[03:01:21] 200 -    2KB - /rss
-[03:01:28] 200 -    3KB - /Search
-[03:01:28] 200 -    3KB - /search
-[03:01:53] 200 -    1KB - /sitemap
-[03:02:43] 200 -    3KB - /tags
-[03:03:10] 403 -    2KB - /Trace.axd
-```
-
-- Using Gobuster, the following paths were discovered:
-  - /assets
-  - /fuel
-  - /offline
-- /
-  - Flag Discovery
-  - THM{G!T_G00D}
-- robots.txt
-  - UmbracoIsTheBest!
-- /authors
-  - Flag Discovery
-  - THM{L0L_WH0_D15}
-- /sitemap
-  - XML file.
-  - Probably a file containing logs.
-
-```
-<urlset xsi:schemalocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-<url>
-<loc>http://10.10.94.131/blog/</loc>
-<lastmod>2020-04-05T20:37:17+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/</loc>
-<lastmod>2020-04-05T19:11:38+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/we-are-hiring/</loc>
-<lastmod>2020-04-05T21:01:02+00:00</lastmod>
-</url>
-<url>
-<loc>
-http://10.10.94.131/archive/a-cheers-to-our-it-department/
-</loc>
-<lastmod>2020-04-05T21:02:29+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/</loc>
-<lastmod>2020-04-05T23:13:00+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/jane-doe/</loc>
-<lastmod>2020-04-05T21:11:16+00:00</lastmod>
-</url>
-</urlset>
-```
-- Email
-  - JD@anthem.com
-- 3389 connection
-
-```
-nmap -p 3389 --script rdp-enum-encryption,rdp-ntlm-info -sV 10.10.94.131
-
-Starting Nmap 7.80 ( https://nmap.org ) at 2025-05-15 14:27 BST
-Nmap scan report for 10.10.94.131
-Host is up (0.00094s latency).
-
-PORT     STATE SERVICE       VERSION
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
-| rdp-enum-encryption: 
-|   Security layer
-|     CredSSP (NLA): SUCCESS
-|     CredSSP with Early User Auth: SUCCESS
-|     RDSTLS: SUCCESS
-|     SSL: SUCCESS
-|_  RDP Protocol Version:  RDP 10.6 server
-| rdp-ntlm-info: 
-|   Target_Name: WIN-LU09299160F
-|   NetBIOS_Domain_Name: WIN-LU09299160F
-|   NetBIOS_Computer_Name: WIN-LU09299160F
-|   DNS_Domain_Name: WIN-LU09299160F
-|   DNS_Computer_Name: WIN-LU09299160F
-|   Product_Version: 10.0.17763
-|_  System_Time: 2025-05-15T13:27:09+00:00
-MAC Address: 02:54:1F:FF:87:BF (Unknown)
-Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-
-```
-
-- Umbroco CMS
-
-```
-Umbraco.Sys.ServerVariables = {
-  "umbracoUrls": {
-    "externalLoginsUrl": "/umbraco/ExternalLogin",
-    "serverVarsJs": "/umbraco/ServerVariables",
-    "authenticationApiBaseUrl": "/umbraco/backoffice/UmbracoApi/Authentication/",
-    "currentUserApiBaseUrl": "/umbraco/backoffice/UmbracoApi/CurrentUser/"
-  },
-  ...
-}
-```
-
-- searchexploit
-  - searchsploit umbraco
-  - searchsploit -m 19671
-  - cat 19671.py
-
-
-
-
-## 2. Exploitation
-
-
-## 3. Privilege Escalation
-
-## 4. Flags
+## ツリーとフォレストの概念
+- 単一のドメインで管理できない場合は、サブドメインを切って管理する
+- その場合オリジンのドメインとサブドメインそれぞれにDCが存在する。親会社と子会社みたいなイメージ。これをツリーという
+- ツリーをくっつけることもできる。イメージは会社の合併など。別のドメインがアクセス可能になる。これをフォレスト
+- 管理者権限はツリー内でのみの管理者と、フォレストをまたぐ管理者も設定可能。双方向や一方向もあり
