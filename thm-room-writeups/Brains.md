@@ -1,155 +1,154 @@
 # TryHackMe - Brains
-[https://tryhackme.com/room/anthem](https://tryhackme.com/room/anthem)
+[https://tryhackme.com/room/brains](https://tryhackme.com/room/brains)
 
 ## Target Info
-- IP: 10.10.94.131
+- IP: 10.10.103.234
 - OS: 
 
 ## 1. Enumeration
-- nmap scan: nmap -sV -O 10.10.94.131
-- Open ports: 80, 3389
+- nmap -sV -O 10.10.103.234
 
 ```
-PORT     STATE SERVICE       VERSION
-80/tcp   open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
+PORT      STATE SERVICE  VERSION
+22/tcp    open  ssh      OpenSSH 8.2p1 Ubuntu 4ubuntu0.11 (Ubuntu Linux; protocol 2.0)
+80/tcp    open  http     Apache httpd 2.4.41 ((Ubuntu))
+50000/tcp open  ibm-db2?
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
 ```
 
-- Details
-  - Anthem.com. Site of Blogite
-- gobuster
+- hydra -l root -P /usr/share/wordlists/rockyou.txt -f -o found.txt ssh://10.10.103.234
+- パスワード認証をサポートしてない
+
+- nmap -sV -p 50000 --script=banner,vuln,default 10.10.103.234
+  - 50000ポートはwebサービスである可能性高い
+- admin/admin admin/passwordでログインできず
+  - 以下を発見
+```
+<style id="1971be14413" type="text/css">
+    @import "/res/459560978433157637.css?v=1748519309691";
+</style>
+```   
 
 ```
-gobuster dir -u http://10.10.94.131 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http
+<script type="text/javascript">
+      $j(document).ready(function($) {
+        var loginForm = $('.loginForm');
+
+        $("#username").focus();
+
+        loginForm.attr('action', '/loginSubmit.html');
+        loginForm.submit(function() {
+          return BS.LoginForm.submitLogin();
+        });
+
+        if (BS.Cookie.get("__test") != "1") {
+          $("#noCookiesEnabledMessage").show();
+        }
+
+        if (BS.Cookie.get("RecentLogin") !== null) {
+          const errBlock = document.querySelector('#errorMessage');
+          errBlock.textContent = "Clear the browser cookies or restart the browser to log in.";
+          errBlock.style.display = "block";
+          BS.Cookie.remove("RecentLogin");
+        }
+
+        if ($('#fading').length > 0) {
+          BS.Highlight('fading');
+        }
+
+        const username = {
+          name: 'Username',
+          input: document.getElementById('username'),
+          error: document.getElementById('username-error'),
+          maxLength: 60
+        };
+        const password = {
+          name: 'Password',
+          input: document.getElementById('password'),
+          error: document.getElementById('password-error'),
+          maxLength: 128
+        };
+        const submit = document.querySelector('.loginButton');
+        function validateInput({name, input, error, maxLength}) {
+          if (input.value.length > maxLength) {
+            input.classList.add('errorField');
+            error.textContent = name + ' should be no longer than ' + maxLength + ' characters';
+            return false
+          } else {
+            input.classList.remove('errorField');
+            error.textContent = '';
+            return true;
+          }
+        }
+        function handleChange() {
+          const usernameValid = validateInput(username);
+          const passwordValid = validateInput(password);
+          submit.disabled = !usernameValid || !passwordValid;
+        }
+        username.input.addEventListener('input', handleChange);
+        password.input.addEventListener('input', handleChange);
+      });
 ```
 
-- dirsearch -u 
+- gobuster 
+- gobuster dir -u http://10.10.103.234:50000 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http
 
 ```
-[02:49:10] 403 -  312B  - /%2e%2e//google.com
-[02:49:11] 403 -  312B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:49:45] 301 -  149B  - /.vscode  ->  http://anthem.com/.vscode/
-[02:50:05] 403 -  312B  - /\..\..\..\..\..\..\..\..\..\etc\passwd
-[02:53:41] 301 -  118B  - /archive  ->  /
-[02:53:42] 301 -  118B  - /archive.aspx  ->  /
-[02:54:11] 500 -   45B  - /base/static/c
-[02:54:23] 200 -    5KB - /blog/
-[02:54:23] 200 -    5KB - /blog
-[02:54:40] 200 -    3KB - /categories
-[02:54:42] 403 -  312B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:57:33] 302 -  126B  - /INSTALL  ->  /umbraco/
-[02:57:33] 302 -  126B  - /Install  ->  /umbraco/
-[02:57:33] 302 -  126B  - /install  ->  /umbraco/
-[02:57:34] 302 -  126B  - /install/  ->  /umbraco/
-[03:01:17] 200 -  192B  - /robots.txt
-[03:01:21] 200 -    2KB - /rss
-[03:01:28] 200 -    3KB - /Search
-[03:01:28] 200 -    3KB - /search
-[03:01:53] 200 -    1KB - /sitemap
-[03:02:43] 200 -    3KB - /tags
-[03:03:10] 403 -    2KB - /Trace.axd
-```
-
-- Using Gobuster, the following paths were discovered:
-  - /assets
-  - /fuel
-  - /offline
-- /
-  - Flag Discovery
-  - THM{G!T_G00D}
-- robots.txt
-  - UmbracoIsTheBest!
-- /authors
-  - Flag Discovery
-  - THM{L0L_WH0_D15}
-- /sitemap
-  - XML file.
-  - Probably a file containing logs.
-
-```
-<urlset xsi:schemalocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-<url>
-<loc>http://10.10.94.131/blog/</loc>
-<lastmod>2020-04-05T20:37:17+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/</loc>
-<lastmod>2020-04-05T19:11:38+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/we-are-hiring/</loc>
-<lastmod>2020-04-05T21:01:02+00:00</lastmod>
-</url>
-<url>
-<loc>
-http://10.10.94.131/archive/a-cheers-to-our-it-department/
-</loc>
-<lastmod>2020-04-05T21:02:29+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/</loc>
-<lastmod>2020-04-05T23:13:00+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/jane-doe/</loc>
-<lastmod>2020-04-05T21:11:16+00:00</lastmod>
-</url>
-</urlset>
-```
-- Email
-  - JD@anthem.com
-- 3389 connection
-
-```
-nmap -p 3389 --script rdp-enum-encryption,rdp-ntlm-info -sV 10.10.94.131
-
-Starting Nmap 7.80 ( https://nmap.org ) at 2025-05-15 14:27 BST
-Nmap scan report for 10.10.94.131
-Host is up (0.00094s latency).
-
-PORT     STATE SERVICE       VERSION
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
-| rdp-enum-encryption: 
-|   Security layer
-|     CredSSP (NLA): SUCCESS
-|     CredSSP with Early User Auth: SUCCESS
-|     RDSTLS: SUCCESS
-|     SSL: SUCCESS
-|_  RDP Protocol Version:  RDP 10.6 server
-| rdp-ntlm-info: 
-|   Target_Name: WIN-LU09299160F
-|   NetBIOS_Domain_Name: WIN-LU09299160F
-|   NetBIOS_Computer_Name: WIN-LU09299160F
-|   DNS_Domain_Name: WIN-LU09299160F
-|   DNS_Computer_Name: WIN-LU09299160F
-|   Product_Version: 10.0.17763
-|_  System_Time: 2025-05-15T13:27:09+00:00
-MAC Address: 02:54:1F:FF:87:BF (Unknown)
-Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+/img                  (Status: 302) [Size: 0] [--> /img/]
+/profile              (Status: 302) [Size: 0] [--> /profile/]
+/admin                (Status: 302) [Size: 0] [--> /admin/]
+/overview             (Status: 401) [Size: 66]
+/tests                (Status: 302) [Size: 0] [--> /tests/]
+/plugins              (Status: 302) [Size: 0] [--> /plugins/]
+/css                  (Status: 302) [Size: 0] [--> /css/]
+/project              (Status: 401) [Size: 66]
+/test                 (Status: 401) [Size: 66]
+/license              (Status: 302) [Size: 0] [--> /license/]
+/status               (Status: 302) [Size: 0] [--> /status/]
+/update               (Status: 403) [Size: 13]
+/problems             (Status: 302) [Size: 0] [--> /problems/]
+/js                   (Status: 302) [Size: 0] [--> /js/]
+/learn                (Status: 401) [Size: 66]
+/changes              (Status: 401) [Size: 66]
+/coverage             (Status: 302) [Size: 0] [--> /coverage/]
+/change               (Status: 401) [Size: 66]
+/build                (Status: 401) [Size: 66]
+/maintenance          (Status: 302) [Size: 0] [--> /maintenance/]
+/agent                (Status: 401) [Size: 66]
+/investigations       (Status: 401) [Size: 66]
+/agents               (Status: 401) [Size: 66]
+/builds               (Status: 401) [Size: 66]
+/favorite             (Status: 401) [Size: 66]
+/nodes                (Status: 302) [Size: 0] [--> /nodes/]
+/parameters           (Status: 302) [Size: 0] [--> /parameters/]
+/artifacts            (Status: 302) [Size: 0] [--> /artifacts/]
+/http%3A%2F%2Fwww     (Status: 400) [Size: 435]
+/queue                (Status: 401) [Size: 66]
+/clouds               (Status: 302) [Size: 0] [--> /clouds/]
+/http%3A%2F%2Fyoutube (Status: 400) [Size: 435]
+/http%3A%2F%2Fblogs   (Status: 400) [Size: 435]
+/http%3A%2F%2Fblog    (Status: 400) [Size: 435]
+/pipelines            (Status: 401) [Size: 66]
+/**http%3A%2F%2Fwww   (Status: 400) [Size: 435]
 
 ```
 
-- Umbroco CMS
+
+- searchsploit
 
 ```
-Umbraco.Sys.ServerVariables = {
-  "umbracoUrls": {
-    "externalLoginsUrl": "/umbraco/ExternalLogin",
-    "serverVarsJs": "/umbraco/ServerVariables",
-    "authenticationApiBaseUrl": "/umbraco/backoffice/UmbracoApi/Authentication/",
-    "currentUserApiBaseUrl": "/umbraco/backoffice/UmbracoApi/CurrentUser/"
-  },
-  ...
-}
+# searchsploit teamcity
+-------------------------------------------- ---------------------------------
+ Exploit Title                              |  Path
+-------------------------------------------- ---------------------------------
+JetBrains TeamCity 2018.2.4 - Remote Code E | java/remote/47891.txt
+TeamCity < 9.0.2 - Disabled Registration By | multiple/remote/46514.js
+TeamCity Agent - XML-RPC Command Execution  | multiple/remote/45917.rb
+TeamCity Agent XML-RPC 10.0 - Remote Code E | php/webapps/48201.py
+-------------------------------------------- ---------------------------------
+Shellcodes: No Results
+
 ```
-
-- searchexploit
-  - searchsploit umbraco
-  - searchsploit -m 19671
-  - cat 19671.py
-
 
 
 
