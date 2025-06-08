@@ -46,3 +46,10 @@
   - GTFOBins
   - searchsploit,exploit-db
 
+
+## ローカルのメモ
+- sudo nmap -sV -O 10.10.251.27
+- gobuster dir -u http://10.10.251.27 -w common.txt http
+- lftp -u anonymous 10.10.104.75
+- hydra -l jake -P rockyou.txt -f -o found.txt ssh://10.10.104.75
+- ssh jake@10.10.104.75
